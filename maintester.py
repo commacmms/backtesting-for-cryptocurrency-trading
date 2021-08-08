@@ -6,7 +6,7 @@ import threading
 import backtrader as bt
 import backtrader.feeds as btfeeds
 
-from binancedata import *
+from coinbasedata import *
 
 # Overall account balance
 account_balance = 100000
@@ -29,24 +29,22 @@ buy_trigger = 1
 threads = []
 coins = get_coins()
 for coin in coins:
-
-    t = threading.Thread(target=get_historical_data, args=(coin, '1 Jan 2021', Client.KLINE_INTERVAL_1MINUTE) ) #'get_historical_data('ETHUSDT', '1 Jan 2021', Client.KLINE_INTERVAL_1MINUTE)
+    # get_historical_data(coin, start, end, granularity)
+    t = threading.Thread(target=get_historical_data, args=(coin, '01-01-2021', '30-06-2021', 86400))
     t.start()
     threads.append(t)
-
 
 [thread.join() for thread in threads]
 
 def get_all_filenames():
     for coin in coins:
-        return [get_historical_data(coin, '1 Jan 2021', Client.KLINE_INTERVAL_1MINUTE) for coin in coins]
-
+        return [get_historical_data(coin, '01-01-2021', '30-06-2021', 86400) for coin in coins]
 
 # Create a Stratey
 class TestStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        ''' Logging function for this strategy'''
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
@@ -103,15 +101,13 @@ class TestStrategy(bt.Strategy):
 
         if self.position:
             if self.dataclose[0] > self.position.price + (self.position.price*take_profit/100) or  self.dataclose[0] < self.position.price - (self.position.price*stop_loss/100):
-
                 #self.log('SELL CREATE, %.2f' % self.dataclose[0])
                 #self.sell(size=trade_size, exectype=bt.Order.Market)
-                #self.order = self.sell() 
+                #self.order = self.sell()
                 self.close()
                 self.order = self.close()
 
 def start_backtesting():
-
     historical_data = get_all_filenames()
     for coin in historical_data:
         # Create a cerebro entity
@@ -122,20 +118,19 @@ def start_backtesting():
 
         # load data from our CSV file
         data = btfeeds.GenericCSVData(
-
-        # Create a Data Feed
-        dataname=coin,
-        fromdate=datetime(2021, 1, 1),
-        todate=datetime(2021, 5, 24),
-        nullvalue=0.0,
-        dtformat=lambda x: datetime.utcfromtimestamp(float(x) / 1000.0),
-        datetime=0,
-        high=1,
-        low=2,
-        open=3,
-        close=4,
-        volume = -1,
-        openinterest=-1
+            # Create a Data Feed
+            dataname=coin,
+            fromdate=datetime(2020, 12, 31),
+            todate=datetime(2021, 7, 1),
+            nullvalue=0.0,
+            dtformat=lambda x: datetime.utcfromtimestamp(float(x) / 1000.0),
+            datetime=0,
+            high=2,
+            low=1,
+            open=3,
+            close=4,
+            volume = 5,
+            openinterest=-1
         )
 
         # Add the Data Feed to Cerebro
@@ -153,6 +148,5 @@ def start_backtesting():
 
         # Print out the final result
         print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
-
 
 start_backtesting()
